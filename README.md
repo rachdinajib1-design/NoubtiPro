@@ -1,1 +1,72 @@
-# NoubtiPro
+# NoubtiProname: Build Noubtak Pro v0.3
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Extract Noubtak project
+        run: unzip -o NoubtakPro_v0.3.zip
+
+      - name: Setup Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.10.2'
+
+      - name: Build release APK
+        working-directory: NoubtakProAndroid
+        run: gradle :app:assembleRelease
+
+      - name: Sign APK
+        working-directory: NoubtakProAndroid
+        run: |
+          keytool -genkeypair -v \
+            -keystore noubtak-test.jks \
+            -alias noubtak \
+            -keyalg RSA \
+            -keysize 2048 \
+            -validity 10000 \
+            -storepass changeit \
+            -keypass changeit \
+            -dname "CN=Noubtak Test,O=Noubtak,C=MA"
+
+          ZIPALIGN=$(find "$ANDROID_HOME/build-tools" -name zipalign | sort -V | tail -1)
+          APKSIGNER=$(find "$ANDROID_HOME/build-tools" -name apksigner | sort -V | tail -1)
+
+          "$ZIPALIGN" -f 4 \
+            app/build/outputs/apk/release/app-release-unsigned.apk \
+            Noubtak-Pro-v0.3-aligned.apk
+
+          "$APKSIGNER" sign \
+            --ks noubtak-test.jks \
+            --ks-key-alias noubtak \
+            --ks-pass pass:changeit \
+            --key-pass pass:changeit \
+            --v1-signing-enabled true \
+            --v2-signing-enabled true \
+            --v3-signing-enabled true \
+            --out Noubtak-Pro-v0.3.apk \
+            Noubtak-Pro-v0.3-aligned.apk
+
+          "$APKSIGNER" verify --verbose Noubtak-Pro-v0.3.apk
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: Noubtak-Pro-v0.3
+          path: NoubtakProAndroid/Noubtak-Pro-v0.3.apk
