@@ -1,4 +1,4 @@
-name: Build Noubti Pro APK
+name: Build Noubti Pro v0.2
 
 on:
   workflow_dispatch:
@@ -11,13 +11,21 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout repository
+      - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Extract Noubti project
+      - name: Extract project
         run: unzip -o NoubtiPro_Android_Project_v0.1.zip
 
-      - name: Setup Java 17
+      - name: Prepare Android app
+        working-directory: NoubtiProAndroid
+        run: |
+          sed -i "s/applicationId 'ma.noubti.pro'/applicationId 'com.rachdinajib.noubtipro.beta'/" app/build.gradle
+          sed -i "s/versionCode 1/versionCode 2/" app/build.gradle
+          sed -i "s/versionName '0.1.0'/versionName '0.2.0'/" app/build.gradle
+          sed -i "s/targetSdk 35/targetSdk 34/" app/build.gradle
+
+      - name: Setup Java
         uses: actions/setup-java@v4
         with:
           distribution: temurin
@@ -28,12 +36,45 @@ jobs:
         with:
           gradle-version: '8.10.2'
 
-      - name: Build APK
+      - name: Build release APK
         working-directory: NoubtiProAndroid
-        run: gradle :app:assembleDebug
+        run: gradle :app:assembleRelease
 
-      - name: Upload Noubti APK
+      - name: Sign APK
+        working-directory: NoubtiProAndroid
+        run: |
+          keytool -genkeypair -v \
+            -keystore noubti-test.jks \
+            -alias noubti \
+            -keyalg RSA \
+            -keysize 2048 \
+            -validity 10000 \
+            -storepass changeit \
+            -keypass changeit \
+            -dname "CN=Noubti Test,O=Noubti,C=MA"
+
+          ZIPALIGN=$(find "$ANDROID_HOME/build-tools" -name zipalign | sort -V | tail -1)
+          APKSIGNER=$(find "$ANDROID_HOME/build-tools" -name apksigner | sort -V | tail -1)
+
+          "$ZIPALIGN" -f 4 \
+            app/build/outputs/apk/release/app-release-unsigned.apk \
+            Noubti-Pro-v0.2-aligned.apk
+
+          "$APKSIGNER" sign \
+            --ks noubti-test.jks \
+            --ks-key-alias noubti \
+            --ks-pass pass:changeit \
+            --key-pass pass:changeit \
+            --v1-signing-enabled true \
+            --v2-signing-enabled true \
+            --v3-signing-enabled true \
+            --out Noubti-Pro-v0.2.apk \
+            Noubti-Pro-v0.2-aligned.apk
+
+          "$APKSIGNER" verify --verbose Noubti-Pro-v0.2.apk
+
+      - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: Noubti-Pro-APK
-          path: NoubtiProAndroid/app/build/outputs/apk/debug/app-debug.apk
+          name: Noubti-Pro-v0.2
+          path: NoubtiProAndroid/Noubti-Pro-v0.2.apk
