@@ -15,7 +15,7 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Extract Noubtak project
-        run: unzip -o NoubtakPro_v0.4.zip
+        run: unzip -o NoubtakPro_Android_Project_v0.4.zip
 
       - name: Setup Java 17
         uses: actions/setup-java@v4
@@ -34,7 +34,7 @@ jobs:
 
       - name: Sign APK
         working-directory: NoubtakProAndroid
-        run:unzip -o NoubtakPro_Android_Project_v0.4.zip
+        run: |
           keytool -genkeypair -v \
             -keystore noubtak-test.jks \
             -alias noubtak \
@@ -61,7 +61,7 @@ jobs:
             --v2-signing-enabled true \
             --v3-signing-enabled true \
             --out Noubtak-Pro-v0.4.apk \
-            Noubtak-Pro-v0.3-aligned.apk
+            Noubtak-Pro-v0.4-aligned.apk
 
           "$APKSIGNER" verify --verbose Noubtak-Pro-v0.4.apk
 
