@@ -1,4 +1,4 @@
-name: Build Noubtak Pro v0.3
+name: Build Noubtak Pro v0.4
 
 on:
   workflow_dispatch:
