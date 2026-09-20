@@ -34,7 +34,7 @@ jobs:
 
       - name: Sign APK
         working-directory: NoubtakProAndroid
-        run: |
+        run:unzip -o NoubtakPro_Android_Project_v0.4.zip
           keytool -genkeypair -v \
             -keystore noubtak-test.jks \
             -alias noubtak \
