@@ -1,1 +1,39 @@
+name: Build Noubti Pro APK
 
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Extract Noubti project
+        run: unzip -o NoubtiPro_Android_Project_v0.1.zip
+
+      - name: Setup Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.10.2'
+
+      - name: Build APK
+        working-directory: NoubtiProAndroid
+        run: gradle :app:assembleDebug
+
+      - name: Upload Noubti APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: Noubti-Pro-APK
+          path: NoubtiProAndroid/app/build/outputs/apk/debug/app-debug.apk
